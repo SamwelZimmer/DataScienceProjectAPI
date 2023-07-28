@@ -3,14 +3,30 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from search import process_term
 from face_search import get_similar_faces
+from scripts.neuron_signal_generator import generate_signal
 
 app = Flask(__name__)
-CORS(app, origins=['http://localhost:3000', 'https://data-science-project-frontend.vercel.app'])
+CORS(app, origins=['http://localhost:3000', 'http://localhost:5000', 'https://data-science-project-frontend.vercel.app'])
 
 @app.route('/')
 def hello_world():
     return 'Hello from Flask!'
 
+@app.route('/generate_neuron_signal', methods=['POST'])
+def neuron_signal():
+    data = request.get_json()
+    neuron_type, lmbda, v_rest, v_thres, t_ref, fix_random_seed = data["neuron_type"], data["lambda"], data["v_rest"], data["v_thres"], data["t_ref"], data["fix_random_seed"]
+
+    signal_data = generate_signal(
+        neuron_type=neuron_type, 
+        lmbda=lmbda, 
+        v_rest=v_rest, 
+        v_thres=v_thres, 
+        t_ref=t_ref,
+        fix_random_seed=fix_random_seed
+    )
+    
+    return signal_data
 
 @app.route('/time')
 def get_current_time():
