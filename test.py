@@ -10,7 +10,7 @@ generate_electrode_signal(
     decay_rate=2,
     noise_type='gaussian',
     noise_std=0.5,
-    filter_type='none',
+    filter_type='bandpass',
     low=500,
     high=3000
 )
