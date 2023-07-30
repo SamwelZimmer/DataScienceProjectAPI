@@ -1,12 +1,12 @@
 import numpy as np
 
 from classes.neuron import EulerLIF, RKLIF
-from helpers.constants import SAMPLE_RATE, SIGNAL_LENGTH
+from helpers.constants import SAMPLE_RATE, SIGNAL_LENGTH, RANDOM_STATE
 
 def generate_signal(neuron_type="standard", lmbda=14, v_rest=-70, v_thres=-10, t_ref=0.02, fix_random_seed=False):
 
     if fix_random_seed:
-        seed = 1729
+        seed = RANDOM_STATE
     else:
         seed = None
 

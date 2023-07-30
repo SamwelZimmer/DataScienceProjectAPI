@@ -5,6 +5,8 @@ from search import process_term
 from face_search import get_similar_faces
 from scripts.neuron_signal_generator import generate_signal
 from scripts.noise_and_filtering import generate_electrode_signal
+from scripts.simulator import simulate_recording
+from scripts.spike_extraction import get_threshold_value, get_waveform_data
 
 app = Flask(__name__)
 CORS(app, origins=['http://localhost:3000', 'http://localhost:5000', 'https://data-science-project-frontend.vercel.app'])
@@ -12,6 +14,39 @@ CORS(app, origins=['http://localhost:3000', 'http://localhost:5000', 'https://da
 @app.route('/')
 def hello_world():
     return 'Hello from Flask!'
+
+@app.route('/waveforms', methods=['POST'])
+def waveforms():
+    data = request.get_json()
+    signals = data["signals"]
+    extraction_data = data["extractionParams"]
+    multiplier, waveform_duration = extraction_data["thresholdMultiplier"], extraction_data["waveformDuration"]
+
+    waveforms, waveform_info = get_waveform_data(signals, multiplier, waveform_duration)
+
+    return { "waveforms": waveforms.tolist(), "waveform_info": waveform_info.tolist() }
+
+
+@app.route('/threshold_value', methods=['POST'])
+def threshold_value():
+    data = request.get_json()
+    signal = data["signal"]
+    multiplier = data["thresholdMultiplier"]
+
+    threshold = get_threshold_value(signal, multiplier)
+
+    return jsonify({"threshold": threshold})
+
+
+@app.route('/simulate', methods=['POST'])
+def simulate():
+    data = request.get_json()
+    placements, neuron_params, processing_params = data["placements"], data["neuronParams"], data["processingParams"]
+
+    time, filtered_signals = simulate_recording(placements, neuron_params, processing_params)
+
+    return { "time": time, "signals": filtered_signals }
+
 
 @app.route('/generate_neuron_signal', methods=['POST'])
 def neuron_signal():

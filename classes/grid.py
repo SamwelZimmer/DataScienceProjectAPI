@@ -7,7 +7,7 @@ from scipy.stats import mode
 from classes.neuron import EulerLIF, RKLIF
 
 class Grid:
-    def __init__(self, size:int=9, decay_rate:float=1.0, signal_length:int=1, sample_rate:int=25000, neuron_type:str="standard", decay_type:str="square", random_state:bool=None) -> None:
+    def __init__(self, size:int=9, decay_rate:float=1.0, signal_length:int=1, sample_rate:int=25000, neuron_type:str="standard", decay_type:str="square", lmbda: int=14, v_rest: int=-70, v_thres: int=-10, t_ref: float=0.02, noise_type: str="gaussian", noise_std: float=0.5, random_state:bool=None) -> None:
         self.signal_length = signal_length
         self.sample_rate = sample_rate
         self.step_size = 1 / sample_rate
@@ -20,6 +20,12 @@ class Grid:
         self.neurons_dict = {}
         self.electrode_dict = {}
         self.grid = [[None for _ in range(self.width)] for _ in range(self.height)]
+        self.lmbda = lmbda
+        self.v_rest = v_rest
+        self.v_thres = v_thres
+        self.t_ref = t_ref
+        self.noise_type = noise_type
+        self.noise_std = noise_std
 
         # random state doesn't yet do anything
         if self.random_state is not None:
@@ -27,8 +33,8 @@ class Grid:
 
     def __select_neuron_type(self): 
         neuron_types_dict = {
-            "standard": RKLIF(v_rest=-70, sample_rate=self.sample_rate, thr=-10, tf=self.signal_length, t_ref=0.02, lmbda=14),
-            "euler": EulerLIF(v_rest=-70, sample_rate=self.sample_rate, thr=-10, tf=self.signal_length, t_ref=0.02, lmbda=14)
+            "standard": RKLIF(v_rest=self.v_rest, sample_rate=self.sample_rate, thr=self.v_thres, tf=self.signal_length, t_ref=self.t_ref, lmbda=self.lmbda, seed=self.random_state),
+            "euler": EulerLIF(v_rest=self.v_rest, sample_rate=self.sample_rate, thr=self.v_thres, tf=self.signal_length, t_ref=self.t_ref, lmbda=self.lmbda, seed=self.random_state)
         }
         
         if self.neuron_type not in neuron_types_dict.keys():
@@ -126,9 +132,9 @@ class Grid:
             # each electrode records this signal with its intensity depending on the distance from the neuron
             for electrode in self.electrode_dict.keys():
                 distance = self.electrode_dict[electrode]["distances"][neuron]
-                decay = self.__decay_mulitplier(distance=distance)
+                decay = self.decay_mulitplier(distance=distance)
                 # print("Neuron:", neuron , "Electrode:", electrode, "Distance:", distance)
-                self.electrode_dict[electrode]["signals"].append((neuron_signal * decay) + self.noise(neuron_signal, type="gaussian"))
+                self.electrode_dict[electrode]["signals"].append((neuron_signal * decay) + self.noise(neuron_signal, noise_stddev=self.noise_std, type=self.noise_type))
         
         # combine the signals of all of the neurons and combine them (only neccesary if more than one neuron exists)
         if len(list(self.neurons_dict.keys())) > 0:
