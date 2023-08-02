@@ -1,12 +1,15 @@
 import time
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+import ast
 from search import process_term
 from face_search import get_similar_faces
 from scripts.neuron_signal_generator import generate_signal
 from scripts.noise_and_filtering import generate_electrode_signal
 from scripts.simulator import simulate_recording
 from scripts.spike_extraction import get_threshold_value, get_waveform_data
+from scripts.reduce import dimensional_reduction
+from scripts.clustering import get_clusters
 
 app = Flask(__name__)
 CORS(app, origins=['http://localhost:3000', 'http://localhost:5000', 'https://data-science-project-frontend.vercel.app'])
@@ -14,6 +17,32 @@ CORS(app, origins=['http://localhost:3000', 'http://localhost:5000', 'https://da
 @app.route('/')
 def hello_world():
     return 'Hello from Flask!'
+
+
+@app.route('/cluster', methods=['POST'])
+def cluster():
+    data = request.get_json()
+    params, reduced_data = data["clusteringParams"], data["reductionData"]
+    cluster_type, k_type, k = params["cluster_type"], params["k_type"], params["k"]
+
+    reduced_data = ast.literal_eval(reduced_data)
+    predicted_labels = get_clusters(cluster_type, k_type, k, reduced_data)
+
+    return { "predicted_labels": predicted_labels }
+
+
+@app.route('/reduce', methods=['POST'])
+def reduce():
+    data = request.get_json()
+    params, waveforms = data["featuresParams"], data["waveforms"]
+    model, n_components = params["reduction_type"], params["n_components"]
+
+    # convert from string to a list
+    waveforms = ast.literal_eval(waveforms)
+
+    reduced_data = dimensional_reduction(model=model, n_components=n_components, waveforms=waveforms)
+    return reduced_data
+
 
 @app.route('/waveforms', methods=['POST'])
 def waveforms():
