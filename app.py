@@ -1,5 +1,5 @@
 import time
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, session
 from flask_cors import CORS
 import ast
 from search import process_term
@@ -10,6 +10,7 @@ from scripts.simulator import simulate_recording
 from scripts.spike_extraction import get_threshold_value, get_waveform_data
 from scripts.reduce import dimensional_reduction
 from scripts.clustering import get_clusters
+from scripts.triangulate_neurons import triangulate_neurons
 
 app = Flask(__name__)
 CORS(app, origins=['http://localhost:3000', 'http://localhost:5000', 'https://data-science-project-frontend.vercel.app'])
@@ -17,6 +18,37 @@ CORS(app, origins=['http://localhost:3000', 'http://localhost:5000', 'https://da
 @app.route('/')
 def hello_world():
     return 'Hello from Flask!'
+
+def jsonify_dict(d):
+    json_dict = {}
+    for key, value in d.items():
+        if isinstance(key, tuple):
+            key = str(key)
+        if isinstance(value, dict):
+            value = jsonify_dict(value)
+        json_dict[key] = value
+    return json_dict
+
+def stringify_keys(d):
+    return {str(k): stringify_keys(v) if isinstance(v, dict) else v for k, v in d.items()}
+
+
+@app.route('/triangulate', methods=['POST'])
+def triangulate():
+    data = request.get_json()
+
+    signals, placements, labels, waveforms, decay_type = ast.literal_eval(data["recordedSignals"]), ast.literal_eval(data["placements"]), ast.literal_eval(data["predictedLabels"]), ast.literal_eval(data["waveforms"]), data["decay_type"]
+    signals = signals["signals"]
+    print("waveforms", type(waveforms), len(waveforms), len(waveforms[0]), len(waveforms[0][0]), type(waveforms[0][0][0]))
+    print("signals", type(signals), len(signals), len(signals[0]), type(signals[0][0]))
+    print("labels", type(labels), len(labels), type(labels[0]))
+    print("placements", type(placements), len(placements), type(placements[0]))
+
+    construction_dict = triangulate_neurons(signals=signals, placements=placements, labels=labels, waveforms=waveforms, decay_type=decay_type)
+
+    construction_dict = stringify_keys(construction_dict)
+
+    return construction_dict
 
 
 @app.route('/cluster', methods=['POST'])
