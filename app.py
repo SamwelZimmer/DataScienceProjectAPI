@@ -1,9 +1,9 @@
 import time
-from flask import Flask, request, jsonify, session
+from flask import Flask, request, jsonify
 from flask_cors import CORS
 import ast
 from search import process_term
-from face_search import get_similar_faces
+# from face_search import get_similar_faces
 from scripts.neuron_signal_generator import generate_signal
 from scripts.noise_and_filtering import generate_electrode_signal
 from scripts.simulator import simulate_recording
@@ -173,15 +173,15 @@ def search():
     return jsonify(results)
 
 
-@app.route('/faces')
-def facial_similarity():
-    url = request.args.get('img')
-    print("url", url)
-    try:
-        results = get_similar_faces(url)
-    except:
-        results = None
-    return {'term': url, 'result': results}
+# @app.route('/faces')
+# def facial_similarity():
+#     url = request.args.get('img')
+#     print("url", url)
+#     try:
+#         results = get_similar_faces(url)
+#     except:
+#         results = None
+#     return {'term': url, 'result': results}
 
 
 def process_maths(term):
